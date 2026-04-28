@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f8f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Daily Fuel">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Daily Fuel</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="title-block">
+          <p>Daily Fuel</p>
+          <h1 id="dateTitle">Today</h1>
+        </div>
+        <div class="date-strip" role="group" aria-label="Log date">
+          <button class="icon-button" id="prevDay" type="button" aria-label="Previous day">&lsaquo;</button>
+          <input class="date-input" id="logDate" type="date" aria-label="Selected log date">
+          <button class="icon-button" id="nextDay" type="button" aria-label="Next day">&rsaquo;</button>
+        </div>
+      </header>
+
+      <main class="app-main">
+        <section class="summary-grid" aria-label="Daily totals">
+          <article class="metric-card metric-calories">
+            <div class="metric-heading">
+              <span>Calories</span>
+              <span class="metric-percent" id="caloriesPercent">0%</span>
+            </div>
+            <div class="metric-value"><span id="caloriesTotal">0</span><small>kcal</small></div>
+            <div class="progress-track" aria-hidden="true"><span id="caloriesProgress"></span></div>
+            <p class="metric-subline"><span id="caloriesRemaining">0 left</span><span id="caloriesTarget">of 0</span></p>
+          </article>
+
+          <article class="metric-card metric-protein">
+            <div class="metric-heading">
+              <span>Protein</span>
+              <span class="metric-percent" id="proteinPercent">0%</span>
+            </div>
+            <div class="metric-value"><span id="proteinTotal">0</span><small>g</small></div>
+            <div class="progress-track" aria-hidden="true"><span id="proteinProgress"></span></div>
+            <p class="metric-subline"><span id="proteinRemaining">0 left</span><span id="proteinTarget">of 0g</span></p>
+          </article>
+
+          <article class="metric-card metric-carbs">
+            <div class="metric-heading">
+              <span>Carbs</span>
+              <span class="metric-percent" id="carbsPercent">0%</span>
+            </div>
+            <div class="metric-value"><span id="carbsTotal">0</span><small>g</small></div>
+            <div class="progress-track" aria-hidden="true"><span id="carbsProgress"></span></div>
+            <p class="metric-subline"><span id="carbsRemaining">0 left</span><span id="carbsTarget">of 0g</span></p>
+          </article>
+
+          <article class="metric-card metric-fat">
+            <div class="metric-heading">
+              <span>Fat</span>
+              <span class="metric-percent" id="fatPercent">0%</span>
+            </div>
+            <div class="metric-value"><span id="fatTotal">0</span><small>g</small></div>
+            <div class="progress-track" aria-hidden="true"><span id="fatProgress"></span></div>
+            <p class="metric-subline"><span id="fatRemaining">0 left</span><span id="fatTarget">of 0g</span></p>
+          </article>
+        </section>
+
+        <section class="view is-active" id="view-today" data-view-panel="today">
+          <div class="section-heading">
+            <h2>Daily Log</h2>
+            <p class="status-text" id="rangeStatus">No entries</p>
+          </div>
+          <div class="item-list" id="entriesList"></div>
+        </section>
+
+        <section class="view" id="view-add" data-view-panel="add">
+          <div class="section-heading">
+            <h2>Add Entry</h2>
+            <div class="segmented-control" role="tablist" aria-label="Entry type">
+              <button class="is-selected" type="button" data-add-mode="manual">Manual</button>
+              <button type="button" data-add-mode="food">Food</button>
+            </div>
+          </div>
+
+          <form class="tool-form" id="manualForm" data-add-panel="manual">
+            <label>
+              <span>Note</span>
+              <input id="manualNote" type="text" autocomplete="off" placeholder="Snack, meal, or custom item">
+            </label>
+            <div class="form-grid">
+              <label>
+                <span>Calories</span>
+                <input id="manualCalories" type="number" min="0" step="1" inputmode="decimal" required>
+              </label>
+              <label>
+                <span>Protein (g)</span>
+                <input id="manualProtein" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Carbs (g)</span>
+                <input id="manualCarbs" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Fat (g)</span>
+                <input id="manualFat" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+            </div>
+            <button class="primary-button" type="submit">Save Manual Entry</button>
+          </form>
+
+          <form class="tool-form is-hidden" id="foodLogForm" data-add-panel="food">
+            <label>
+              <span>Food</span>
+              <select id="foodSelect" required></select>
+            </label>
+            <label>
+              <span>Quantity</span>
+              <input id="foodQuantity" type="number" min="0.01" step="0.01" inputmode="decimal" value="1" required>
+            </label>
+            <div class="preview-strip" id="foodPreview">0 kcal | P 0g | C 0g | F 0g</div>
+            <button class="primary-button" id="addFoodEntryButton" type="submit">Add Food</button>
+          </form>
+        </section>
+
+        <section class="view" id="view-foods" data-view-panel="foods">
+          <div class="section-heading">
+            <h2>Food Database</h2>
+          </div>
+
+          <form class="tool-form" id="foodForm">
+            <input id="foodId" type="hidden">
+            <label>
+              <span>Food name</span>
+              <input id="foodName" type="text" autocomplete="off" required>
+            </label>
+            <label>
+              <span>Unit</span>
+              <input id="foodUnit" type="text" autocomplete="off" placeholder="serving, cup, bar" required>
+            </label>
+            <div class="form-grid">
+              <label>
+                <span>Calories</span>
+                <input id="foodCalories" type="number" min="0" step="1" inputmode="decimal" required>
+              </label>
+              <label>
+                <span>Protein (g)</span>
+                <input id="foodProtein" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Carbs (g)</span>
+                <input id="foodCarbs" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Fat (g)</span>
+                <input id="foodFat" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="primary-button" id="foodSaveButton" type="submit">Save Food</button>
+              <button class="secondary-button is-hidden" id="foodCancelButton" type="button">Cancel</button>
+            </div>
+          </form>
+
+          <label class="search-field">
+            <span>Search foods</span>
+            <input id="foodSearch" type="search" autocomplete="off">
+          </label>
+          <div class="item-list" id="foodList"></div>
+        </section>
+
+        <section class="view" id="view-targets" data-view-panel="targets">
+          <div class="section-heading">
+            <h2>Targets</h2>
+          </div>
+
+          <form class="tool-form" id="targetForm">
+            <div class="form-grid">
+              <label>
+                <span>Calories</span>
+                <input id="targetCalories" type="number" min="1" step="1" inputmode="decimal" required>
+              </label>
+              <label>
+                <span>Protein (g)</span>
+                <input id="targetProtein" type="number" min="0" step="1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Carbs (g)</span>
+                <input id="targetCarbs" type="number" min="0" step="1" inputmode="decimal">
+              </label>
+              <label>
+                <span>Fat (g)</span>
+                <input id="targetFat" type="number" min="0" step="1" inputmode="decimal">
+              </label>
+            </div>
+            <label>
+              <span>Target range tolerance (%)</span>
+              <div class="range-row">
+                <input id="targetToleranceRange" type="range" min="0" max="25" step="1">
+                <input id="targetTolerance" class="compact-input" type="number" min="0" max="25" step="1" inputmode="numeric">
+              </div>
+            </label>
+            <button class="primary-button" type="submit">Save Targets</button>
+          </form>
+        </section>
+
+        <section class="view" id="view-month" data-view-panel="month">
+          <div class="section-heading">
+            <h2>Month</h2>
+            <p class="status-text" id="monthSummary">0 days in range</p>
+          </div>
+
+          <div class="month-chart" id="monthChart" aria-label="Last 31 days"></div>
+          <div class="legend" aria-label="Chart legend">
+            <span><i class="legend-in"></i>In range</span>
+            <span><i class="legend-off"></i>Out</span>
+            <span><i class="legend-empty"></i>No log</span>
+          </div>
+          <div class="item-list compact-list" id="historyList"></div>
+        </section>
+      </main>
+
+      <nav class="tab-bar" aria-label="Primary">
+        <button class="tab-button is-active" type="button" data-view="today">Today</button>
+        <button class="tab-button" type="button" data-view="add">Add</button>
+        <button class="tab-button" type="button" data-view="foods">Foods</button>
+        <button class="tab-button" type="button" data-view="targets">Targets</button>
+        <button class="tab-button" type="button" data-view="month">Month</button>
+      </nav>
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
