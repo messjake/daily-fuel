@@ -4,13 +4,11 @@ const HISTORY_DAYS = 31;
 const defaults = {
   foods: [],
   logs: {},
-  steps: {},
   targets: {
     calories: 2000,
     protein: 150,
     carbs: 220,
     fat: 70,
-    steps: 10000,
     tolerance: 10
   }
 };
@@ -33,7 +31,6 @@ function loadState() {
     return {
       foods: Array.isArray(stored.foods) ? stored.foods : [],
       logs: stored.logs && typeof stored.logs === "object" ? stored.logs : {},
-      steps: stored.steps && typeof stored.steps === "object" ? stored.steps : {},
       targets: { ...defaults.targets, ...(stored.targets || {}) }
     };
   } catch {
@@ -91,11 +88,6 @@ function pruneLogs() {
       delete state.logs[key];
     }
   }
-  for (const key of Object.keys(state.steps || {})) {
-    if (key < min || key > max) {
-      delete state.steps[key];
-    }
-  }
 }
 
 function uid() {
@@ -144,10 +136,6 @@ function getTotals(key = selectedDate) {
     totals.fat += entry.fat || 0;
     return totals;
   }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
-}
-
-function getSteps(key = selectedDate) {
-  return Math.max(0, Number(state.steps[key]) || 0);
 }
 
 function metricTargets() {
@@ -234,8 +222,6 @@ function renderSummary() {
   renderMetric("protein", totals.protein, state.targets.protein, "g", 1);
   renderMetric("carbs", totals.carbs, state.targets.carbs, "g", 1);
   renderMetric("fat", totals.fat, state.targets.fat, "g", 1);
-  renderMetric("steps", getSteps(), state.targets.steps, "steps", 0);
-  renderSteps();
 
   const status = dayStatus(selectedDate);
   const statusEl = el("#rangeStatus");
@@ -246,7 +232,7 @@ function renderSummary() {
 function renderMetric(metric, total, target, unit, decimals) {
   const percent = target > 0 ? Math.round((total / target) * 100) : 0;
   const cappedPercent = Math.max(0, Math.min(percent, 130));
-  const unitText = unit === "kcal" || unit === "steps" ? ` ${unit}` : unit;
+  const unitText = unit === "kcal" ? " kcal" : unit;
   const remaining = target - total;
   const remainingLabel = target > 0
     ? `${formatNumber(Math.abs(remaining), decimals)} ${remaining >= 0 ? "left" : "over"}`
@@ -257,28 +243,6 @@ function renderMetric(metric, total, target, unit, decimals) {
   el(`#${metric}Progress`).style.width = `${Math.min(cappedPercent, 100)}%`;
   el(`#${metric}Remaining`).textContent = remainingLabel;
   el(`#${metric}Target`).textContent = `of ${formatNumber(target, decimals)}${unitText}`;
-}
-
-function renderSteps() {
-  const steps = getSteps();
-  const target = Number(state.targets.steps) || 0;
-  const status = el("#stepsStatus");
-  el("#stepsInput").value = steps > 0 ? Math.round(steps) : "";
-
-  if (!steps) {
-    status.className = "status-text";
-    status.textContent = "No steps";
-    return;
-  }
-
-  if (target > 0 && steps >= target) {
-    status.className = "status-text is-in";
-    status.textContent = "Goal met";
-    return;
-  }
-
-  status.className = "status-text is-under";
-  status.textContent = target > 0 ? `${formatNumber(target - steps, 0)} to go` : "Steps logged";
 }
 
 function renderEntries() {
@@ -367,12 +331,8 @@ function renderMonth() {
   const keys = historyKeys();
   const daysInRange = keys.filter((key) => dayStatus(key).state === "in").length;
   const loggedDays = keys.filter((key) => getEntries(key).length).length;
-  const stepTarget = Number(state.targets.steps) || 0;
-  const stepDays = keys.filter((key) => getSteps(key) > 0).length;
-  const stepDaysMet = stepTarget > 0 ? keys.filter((key) => getSteps(key) >= stepTarget).length : 0;
 
   el("#monthSummary").textContent = `${daysInRange} of ${loggedDays} logged days in range`;
-  el("#monthStepsSummary").textContent = `${stepDaysMet} of ${stepDays} logged days met goal`;
   el("#monthChart").innerHTML = keys.map((key) => {
     const totals = getTotals(key);
     const target = Number(state.targets.calories) || 1;
@@ -389,23 +349,6 @@ function renderMonth() {
     `;
   }).join("");
 
-  el("#stepsChart").innerHTML = keys.map((key) => {
-    const steps = getSteps(key);
-    const target = Number(state.targets.steps) || 1;
-    const percent = steps > 0 ? Math.max(4, Math.min(100, (steps / target) * 100)) : 4;
-    const status = !steps ? "empty" : steps >= target ? "in" : "under";
-    const dayNumber = dateFromKey(key).getDate();
-    const label = !steps ? "No steps" : steps >= target ? "Goal met" : "Below goal";
-    const aria = `${formatDateLabel(key)}: ${label}, ${formatNumber(steps, 0)} steps`;
-
-    return `
-      <button class="day-bar is-${status}${key === selectedDate ? " is-selected" : ""}" type="button" data-select-date="${key}" aria-label="${aria}">
-        <span class="bar-fill" style="height: ${percent}%"></span>
-        <span class="day-label">${dayNumber}</span>
-      </button>
-    `;
-  }).join("");
-
   const history = [...keys].reverse();
   el("#historyList").innerHTML = history.map((key) => {
     const totals = getTotals(key);
@@ -414,7 +357,7 @@ function renderMonth() {
       <article class="list-item" data-select-date="${key}">
         <div class="list-main">
           <h3>${formatDateLabel(key)}</h3>
-          <p>${formatNumber(totals.calories, 0)} kcal | P ${formatMacro(totals.protein)}g | C ${formatMacro(totals.carbs)}g | F ${formatMacro(totals.fat)}g | ${formatNumber(getSteps(key), 0)} steps</p>
+          <p>${formatNumber(totals.calories, 0)} kcal | P ${formatMacro(totals.protein)}g | C ${formatMacro(totals.carbs)}g | F ${formatMacro(totals.fat)}g</p>
         </div>
         <div class="history-meta">${status.label}</div>
       </article>
@@ -445,7 +388,6 @@ function syncTargetForm() {
   el("#targetProtein").value = state.targets.protein;
   el("#targetCarbs").value = state.targets.carbs;
   el("#targetFat").value = state.targets.fat;
-  el("#targetSteps").value = state.targets.steps;
   el("#targetToleranceRange").value = state.targets.tolerance;
   el("#targetTolerance").value = state.targets.tolerance;
 }
@@ -583,18 +525,6 @@ function bindEvents() {
     renderFoodPreview();
   });
 
-  el("#stepsForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const steps = Math.max(0, Math.round(numberValue("#stepsInput")));
-    if (steps > 0) {
-      state.steps[selectedDate] = steps;
-    } else {
-      delete state.steps[selectedDate];
-    }
-    saveState();
-    render();
-  });
-
   el("#foodForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const id = el("#foodId").value || uid();
@@ -658,7 +588,6 @@ function bindEvents() {
       protein: numberValue("#targetProtein"),
       carbs: numberValue("#targetCarbs"),
       fat: numberValue("#targetFat"),
-      steps: numberValue("#targetSteps"),
       tolerance: Math.max(0, Math.min(25, numberValue("#targetTolerance")))
     };
     syncTargetForm();
@@ -679,7 +608,6 @@ function bindEvents() {
   el("#foodQuantity").addEventListener("input", renderFoodPreview);
 
   el("#monthChart").addEventListener("click", handleDateSelection);
-  el("#stepsChart").addEventListener("click", handleDateSelection);
   el("#historyList").addEventListener("click", handleDateSelection);
 }
 

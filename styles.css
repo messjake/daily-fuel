@@ -13,7 +13,6 @@
   --gold: #b87a20;
   --purple: #7464a9;
   --blue: #3f74a3;
-  --mint: #3a8c68;
   --shadow: 0 14px 42px rgba(23, 33, 40, 0.11);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -243,10 +242,6 @@ button:focus-visible {
   background: var(--blue);
 }
 
-.metric-steps .progress-track span {
-  background: var(--mint);
-}
-
 .metric-subline {
   color: var(--muted);
   font-size: 0.78rem;
@@ -267,10 +262,6 @@ button:focus-visible {
 
 .section-heading {
   margin: 16px 0 10px;
-}
-
-.secondary-heading {
-  margin-top: 20px;
 }
 
 .section-heading h2 {
@@ -300,11 +291,6 @@ button:focus-visible {
   display: grid;
   gap: 12px;
   padding: 14px;
-}
-
-.steps-form {
-  grid-template-columns: minmax(0, 1fr) 132px;
-  align-items: end;
 }
 
 label,
@@ -480,14 +466,6 @@ input[type="range"] {
     var(--surface);
 }
 
-.step-chart {
-  min-height: 150px;
-}
-
-.step-chart .day-bar {
-  height: 118px;
-}
-
 .day-bar {
   display: grid;
   grid-template-rows: minmax(0, 1fr) 20px;
@@ -567,10 +545,6 @@ input[type="range"] {
   background: #cad2cd;
 }
 
-.legend-under {
-  background: var(--gold);
-}
-
 .compact-list {
   margin-top: 12px;
 }
@@ -628,8 +602,7 @@ input[type="range"] {
   }
 
   .summary-grid,
-  .form-grid,
-  .steps-form {
+  .form-grid {
     grid-template-columns: 1fr;
   }
 

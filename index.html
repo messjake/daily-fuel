@@ -66,31 +66,9 @@
             <div class="progress-track" aria-hidden="true"><span id="fatProgress"></span></div>
             <p class="metric-subline"><span id="fatRemaining">0 left</span><span id="fatTarget">of 0g</span></p>
           </article>
-
-          <article class="metric-card metric-steps">
-            <div class="metric-heading">
-              <span>Steps</span>
-              <span class="metric-percent" id="stepsPercent">0%</span>
-            </div>
-            <div class="metric-value"><span id="stepsTotal">0</span><small>steps</small></div>
-            <div class="progress-track" aria-hidden="true"><span id="stepsProgress"></span></div>
-            <p class="metric-subline"><span id="stepsRemaining">0 left</span><span id="stepsTarget">of 0 steps</span></p>
-          </article>
         </section>
 
         <section class="view is-active" id="view-today" data-view-panel="today">
-          <div class="section-heading">
-            <h2>Steps</h2>
-            <p class="status-text" id="stepsStatus">No steps</p>
-          </div>
-          <form class="tool-form steps-form" id="stepsForm">
-            <label>
-              <span>Daily steps</span>
-              <input id="stepsInput" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
-            </label>
-            <button class="primary-button" type="submit">Save Steps</button>
-          </form>
-
           <div class="section-heading">
             <h2>Daily Log</h2>
             <p class="status-text" id="rangeStatus">No entries</p>
@@ -216,10 +194,6 @@
                 <span>Fat (g)</span>
                 <input id="targetFat" type="number" min="0" step="1" inputmode="decimal">
               </label>
-              <label>
-                <span>Steps</span>
-                <input id="targetSteps" type="number" min="0" step="1" inputmode="numeric">
-              </label>
             </div>
             <label>
               <span>Target range tolerance (%)</span>
@@ -243,17 +217,6 @@
             <span><i class="legend-in"></i>In range</span>
             <span><i class="legend-off"></i>Out</span>
             <span><i class="legend-empty"></i>No log</span>
-          </div>
-
-          <div class="section-heading secondary-heading">
-            <h2>Steps</h2>
-            <p class="status-text" id="monthStepsSummary">0 days met</p>
-          </div>
-          <div class="month-chart step-chart" id="stepsChart" aria-label="Last 31 days of steps"></div>
-          <div class="legend" aria-label="Steps chart legend">
-            <span><i class="legend-in"></i>Goal met</span>
-            <span><i class="legend-under"></i>Below</span>
-            <span><i class="legend-empty"></i>No steps</span>
           </div>
           <div class="item-list compact-list" id="historyList"></div>
         </section>
