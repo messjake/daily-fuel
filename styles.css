@@ -363,6 +363,10 @@ label span,
   border-color: var(--line);
 }
 
+.secondary-button:disabled {
+  color: #9aa6a1;
+}
+
 .button-row {
   justify-content: stretch;
   gap: 10px;

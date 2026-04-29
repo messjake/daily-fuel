@@ -132,6 +132,11 @@ function boundedPercent(id) {
   return Math.min(100, value);
 }
 
+function positiveNumber(value) {
+  const number = Number.parseFloat(value);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
 function formatNumber(value, decimals = 0) {
   const rounded = Number(value.toFixed(decimals));
   return new Intl.NumberFormat("en-US", {
@@ -523,6 +528,146 @@ function addEntry(entry) {
   render();
 }
 
+function safeId(value) {
+  const text = String(value || "");
+  return /^[A-Za-z0-9_-]+$/.test(text) ? text : uid();
+}
+
+function normalizeFood(food) {
+  if (!food || typeof food !== "object") return null;
+  const name = String(food.name || "").trim();
+  const unit = String(food.unit || "").trim();
+  if (!name || !unit) return null;
+
+  return {
+    id: safeId(food.id),
+    name,
+    unit,
+    calories: positiveNumber(food.calories),
+    protein: positiveNumber(food.protein),
+    carbs: positiveNumber(food.carbs),
+    fat: positiveNumber(food.fat)
+  };
+}
+
+function normalizeEntry(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const label = String(entry.label || "Imported entry").trim() || "Imported entry";
+  const calories = positiveNumber(entry.calories);
+  const protein = positiveNumber(entry.protein);
+  const carbs = positiveNumber(entry.carbs);
+  const fat = positiveNumber(entry.fat);
+  if (calories + protein + carbs + fat <= 0) return null;
+
+  return {
+    id: safeId(entry.id),
+    source: String(entry.source || "manual"),
+    foodId: entry.foodId ? safeId(entry.foodId) : undefined,
+    label,
+    calories,
+    protein,
+    carbs,
+    fat,
+    quantity: positiveNumber(entry.quantity),
+    unit: entry.unit ? String(entry.unit) : undefined,
+    createdAt: entry.createdAt ? String(entry.createdAt) : new Date().toISOString()
+  };
+}
+
+function normalizeLogs(logs) {
+  if (!logs || typeof logs !== "object" || Array.isArray(logs)) return {};
+  return Object.entries(logs).reduce((normalized, [key, entries]) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || !Array.isArray(entries)) {
+      return normalized;
+    }
+
+    const cleanedEntries = entries.map(normalizeEntry).filter(Boolean);
+    if (cleanedEntries.length) {
+      normalized[key] = cleanedEntries;
+    }
+    return normalized;
+  }, {});
+}
+
+function backupPayload() {
+  return {
+    app: "Daily Fuel",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: {
+      foods: state.foods,
+      logs: state.logs,
+      targets: state.targets
+    }
+  };
+}
+
+function exportBackup() {
+  const backup = JSON.stringify(backupPayload(), null, 2);
+  const blob = new Blob([backup], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `daily-fuel-backup-${todayKey()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  el("#backupStatus").textContent = "Exported";
+}
+
+function parseBackup(text) {
+  const parsed = JSON.parse(text);
+  const source = parsed && typeof parsed === "object" && parsed.data ? parsed.data : parsed;
+  if (!source || typeof source !== "object") {
+    throw new Error("Invalid backup");
+  }
+
+  const hasBackupData = "foods" in source || "logs" in source || "targets" in source;
+  if (!hasBackupData) {
+    throw new Error("Invalid backup");
+  }
+
+  return {
+    foods: Array.isArray(source.foods) ? source.foods.map(normalizeFood).filter(Boolean) : [],
+    logs: normalizeLogs(source.logs),
+    targets: normalizeTargets(source.targets)
+  };
+}
+
+function importBackupFile(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const importedState = parseBackup(String(reader.result || ""));
+      const shouldImport = window.confirm("Importing this backup will replace the foods, daily logs, and targets stored on this device. Continue?");
+      if (!shouldImport) {
+        el("#backupStatus").textContent = "Import canceled";
+        return;
+      }
+
+      state = importedState;
+      saveState();
+      syncTargetForm();
+      render();
+      el("#backupStatus").textContent = "Imported";
+    } catch {
+      el("#backupStatus").textContent = "Import failed";
+    } finally {
+      el("#backupFileInput").value = "";
+    }
+  });
+
+  reader.addEventListener("error", () => {
+    el("#backupStatus").textContent = "Import failed";
+    el("#backupFileInput").value = "";
+  });
+
+  reader.readAsText(file);
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -698,6 +843,16 @@ function bindEvents() {
 
   ["#targetCalories", "#targetProteinPercent", "#targetCarbsPercent", "#targetFatPercent"].forEach((selector) => {
     el(selector).addEventListener("input", updateMacroGramTargets);
+  });
+
+  el("#exportBackupButton").addEventListener("click", exportBackup);
+
+  el("#importBackupButton").addEventListener("click", () => {
+    el("#backupFileInput").click();
+  });
+
+  el("#backupFileInput").addEventListener("change", (event) => {
+    importBackupFile(event.target.files[0]);
   });
 
   el("#foodSelect").addEventListener("change", renderFoodPreview);

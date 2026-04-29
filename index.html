@@ -224,6 +224,18 @@
             </label>
             <button class="primary-button" id="targetSaveButton" type="submit">Save Targets</button>
           </form>
+
+          <div class="section-heading">
+            <h2>Backup</h2>
+            <p class="status-text" id="backupStatus">Ready</p>
+          </div>
+          <div class="tool-form">
+            <div class="button-row">
+              <button class="secondary-button" id="exportBackupButton" type="button">Export Backup</button>
+              <button class="secondary-button" id="importBackupButton" type="button">Import Backup</button>
+            </div>
+            <input class="is-hidden" id="backupFileInput" type="file" accept="application/json,.json">
+          </div>
         </section>
 
         <section class="view" id="view-month" data-view-panel="month">
