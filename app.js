@@ -5,6 +5,10 @@ const CALORIES_PER_GRAM = {
   carbs: 4,
   fat: 9
 };
+const FOOD_NAME_COLLATOR = new Intl.Collator("en-US", {
+  sensitivity: "base",
+  numeric: true
+});
 
 const defaults = {
   foods: [],
@@ -147,6 +151,13 @@ function formatNumber(value, decimals = 0) {
 
 function formatMacro(value) {
   return formatNumber(value, value % 1 === 0 ? 0 : 1);
+}
+
+function sortFoodsAlphabetically(foods = state.foods) {
+  return [...foods].sort((a, b) => (
+    FOOD_NAME_COLLATOR.compare(a.name, b.name) ||
+    FOOD_NAME_COLLATOR.compare(a.unit, b.unit)
+  ));
 }
 
 function calculateMacroGrams(calories, proteinPercent, carbsPercent, fatPercent) {
@@ -337,8 +348,7 @@ function renderEntries() {
 
 function renderFoods() {
   const query = el("#foodSearch").value.trim().toLowerCase();
-  const foods = [...state.foods]
-    .sort((a, b) => a.name.localeCompare(b.name))
+  const foods = sortFoodsAlphabetically()
     .filter((food) => !query || food.name.toLowerCase().includes(query) || food.unit.toLowerCase().includes(query));
 
   if (!foods.length) {
@@ -363,7 +373,7 @@ function renderFoods() {
 function renderFoodSelect() {
   const select = el("#foodSelect");
   const selected = select.value;
-  const foods = [...state.foods].sort((a, b) => a.name.localeCompare(b.name));
+  const foods = sortFoodsAlphabetically();
 
   if (!foods.length) {
     select.innerHTML = '<option value="">No foods saved</option>';
