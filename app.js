@@ -1,5 +1,10 @@
 const STORAGE_KEY = "dailyFuelState.v1";
 const HISTORY_DAYS = 31;
+const CALORIES_PER_GRAM = {
+  protein: 4,
+  carbs: 4,
+  fat: 9
+};
 
 const defaults = {
   foods: [],
@@ -7,8 +12,11 @@ const defaults = {
   targets: {
     calories: 2000,
     protein: 150,
-    carbs: 220,
-    fat: 70,
+    carbs: 200,
+    fat: 67,
+    proteinPercent: 30,
+    carbsPercent: 40,
+    fatPercent: 30,
     tolerance: 10
   }
 };
@@ -31,11 +39,27 @@ function loadState() {
     return {
       foods: Array.isArray(stored.foods) ? stored.foods : [],
       logs: stored.logs && typeof stored.logs === "object" ? stored.logs : {},
-      targets: { ...defaults.targets, ...(stored.targets || {}) }
+      targets: normalizeTargets(stored.targets)
     };
   } catch {
     return cloneDefaults();
   }
+}
+
+function normalizeTargets(storedTargets = {}) {
+  const source = storedTargets && typeof storedTargets === "object" ? storedTargets : {};
+  const targets = { ...defaults.targets, ...source };
+  const hasPercents = ["proteinPercent", "carbsPercent", "fatPercent"]
+    .every((key) => Number.isFinite(Number(source[key])));
+
+  if (!hasPercents) {
+    const percents = deriveMacroPercentsFromGrams(targets);
+    targets.proteinPercent = percents.protein;
+    targets.carbsPercent = percents.carbs;
+    targets.fatPercent = percents.fat;
+  }
+
+  return targets;
 }
 
 function cloneDefaults() {
@@ -102,6 +126,12 @@ function numberValue(id) {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
+function boundedPercent(id) {
+  const value = Number.parseFloat(el(id).value);
+  if (!Number.isFinite(value) || value < 0) return 0;
+  return Math.min(100, value);
+}
+
 function formatNumber(value, decimals = 0) {
   const rounded = Number(value.toFixed(decimals));
   return new Intl.NumberFormat("en-US", {
@@ -112,6 +142,39 @@ function formatNumber(value, decimals = 0) {
 
 function formatMacro(value) {
   return formatNumber(value, value % 1 === 0 ? 0 : 1);
+}
+
+function calculateMacroGrams(calories, proteinPercent, carbsPercent, fatPercent) {
+  return {
+    protein: Math.round((calories * (proteinPercent / 100)) / CALORIES_PER_GRAM.protein),
+    carbs: Math.round((calories * (carbsPercent / 100)) / CALORIES_PER_GRAM.carbs),
+    fat: Math.round((calories * (fatPercent / 100)) / CALORIES_PER_GRAM.fat)
+  };
+}
+
+function deriveMacroPercentsFromGrams(targets) {
+  const calories = Number(targets.calories) || 0;
+  if (calories <= 0) {
+    return {
+      protein: defaults.targets.proteinPercent,
+      carbs: defaults.targets.carbsPercent,
+      fat: defaults.targets.fatPercent
+    };
+  }
+
+  return {
+    protein: Math.round(((Number(targets.protein) || 0) * CALORIES_PER_GRAM.protein / calories) * 100),
+    carbs: Math.round(((Number(targets.carbs) || 0) * CALORIES_PER_GRAM.carbs / calories) * 100),
+    fat: Math.round(((Number(targets.fat) || 0) * CALORIES_PER_GRAM.fat / calories) * 100)
+  };
+}
+
+function targetMacroPercents() {
+  return {
+    protein: Number(state.targets.proteinPercent) || 0,
+    carbs: Number(state.targets.carbsPercent) || 0,
+    fat: Number(state.targets.fatPercent) || 0
+  };
 }
 
 function formatDateLabel(key) {
@@ -384,12 +447,32 @@ function renderActiveView() {
 }
 
 function syncTargetForm() {
+  const percents = targetMacroPercents();
   el("#targetCalories").value = state.targets.calories;
-  el("#targetProtein").value = state.targets.protein;
-  el("#targetCarbs").value = state.targets.carbs;
-  el("#targetFat").value = state.targets.fat;
+  el("#targetProteinPercent").value = percents.protein;
+  el("#targetCarbsPercent").value = percents.carbs;
+  el("#targetFatPercent").value = percents.fat;
   el("#targetToleranceRange").value = state.targets.tolerance;
   el("#targetTolerance").value = state.targets.tolerance;
+  updateMacroGramTargets();
+}
+
+function updateMacroGramTargets() {
+  const calories = Math.max(1, numberValue("#targetCalories"));
+  const proteinPercent = boundedPercent("#targetProteinPercent");
+  const carbsPercent = boundedPercent("#targetCarbsPercent");
+  const fatPercent = boundedPercent("#targetFatPercent");
+  const grams = calculateMacroGrams(calories, proteinPercent, carbsPercent, fatPercent);
+  const percentTotal = proteinPercent + carbsPercent + fatPercent;
+  const isBalanced = Math.abs(percentTotal - 100) < 0.1;
+  const status = el("#macroPercentStatus");
+
+  el("#targetProtein").value = grams.protein;
+  el("#targetCarbs").value = grams.carbs;
+  el("#targetFat").value = grams.fat;
+  status.textContent = `Total ${formatNumber(percentTotal, percentTotal % 1 === 0 ? 0 : 1)}%`;
+  status.className = `status-text ${isBalanced ? "is-in" : percentTotal < 100 ? "is-under" : "is-over"}`;
+  el("#targetSaveButton").disabled = !isBalanced;
 }
 
 function resetFoodForm() {
@@ -583,11 +666,20 @@ function bindEvents() {
 
   el("#targetForm").addEventListener("submit", (event) => {
     event.preventDefault();
+    updateMacroGramTargets();
+    const proteinPercent = boundedPercent("#targetProteinPercent");
+    const carbsPercent = boundedPercent("#targetCarbsPercent");
+    const fatPercent = boundedPercent("#targetFatPercent");
+    if (Math.abs(proteinPercent + carbsPercent + fatPercent - 100) >= 0.1) return;
+    const grams = calculateMacroGrams(numberValue("#targetCalories"), proteinPercent, carbsPercent, fatPercent);
     state.targets = {
       calories: Math.max(1, numberValue("#targetCalories")),
-      protein: numberValue("#targetProtein"),
-      carbs: numberValue("#targetCarbs"),
-      fat: numberValue("#targetFat"),
+      protein: grams.protein,
+      carbs: grams.carbs,
+      fat: grams.fat,
+      proteinPercent,
+      carbsPercent,
+      fatPercent,
       tolerance: Math.max(0, Math.min(25, numberValue("#targetTolerance")))
     };
     syncTargetForm();
@@ -602,6 +694,10 @@ function bindEvents() {
   el("#targetTolerance").addEventListener("input", (event) => {
     const value = Math.max(0, Math.min(25, Number.parseInt(event.target.value || "0", 10)));
     el("#targetToleranceRange").value = value;
+  });
+
+  ["#targetCalories", "#targetProteinPercent", "#targetCarbsPercent", "#targetFatPercent"].forEach((selector) => {
+    el(selector).addEventListener("input", updateMacroGramTargets);
   });
 
   el("#foodSelect").addEventListener("change", renderFoodPreview);

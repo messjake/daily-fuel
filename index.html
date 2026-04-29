@@ -183,17 +183,37 @@
                 <input id="targetCalories" type="number" min="1" step="1" inputmode="decimal" required>
               </label>
               <label>
-                <span>Protein (g)</span>
-                <input id="targetProtein" type="number" min="0" step="1" inputmode="decimal">
+                <span>Protein (%)</span>
+                <input id="targetProteinPercent" type="number" min="0" max="100" step="1" inputmode="decimal" required>
               </label>
               <label>
-                <span>Carbs (g)</span>
-                <input id="targetCarbs" type="number" min="0" step="1" inputmode="decimal">
+                <span>Carbs (%)</span>
+                <input id="targetCarbsPercent" type="number" min="0" max="100" step="1" inputmode="decimal" required>
               </label>
               <label>
-                <span>Fat (g)</span>
-                <input id="targetFat" type="number" min="0" step="1" inputmode="decimal">
+                <span>Fat (%)</span>
+                <input id="targetFatPercent" type="number" min="0" max="100" step="1" inputmode="decimal" required>
               </label>
+            </div>
+            <div class="macro-targets">
+              <div class="macro-targets-heading">
+                <span>Calculated grams</span>
+                <span class="status-text" id="macroPercentStatus">100%</span>
+              </div>
+              <div class="form-grid">
+                <label>
+                  <span>Protein (g)</span>
+                  <input id="targetProtein" type="number" min="0" step="1" inputmode="decimal" readonly>
+                </label>
+                <label>
+                  <span>Carbs (g)</span>
+                  <input id="targetCarbs" type="number" min="0" step="1" inputmode="decimal" readonly>
+                </label>
+                <label>
+                  <span>Fat (g)</span>
+                  <input id="targetFat" type="number" min="0" step="1" inputmode="decimal" readonly>
+                </label>
+              </div>
             </div>
             <label>
               <span>Target range tolerance (%)</span>
@@ -202,7 +222,7 @@
                 <input id="targetTolerance" class="compact-input" type="number" min="0" max="25" step="1" inputmode="numeric">
               </div>
             </label>
-            <button class="primary-button" type="submit">Save Targets</button>
+            <button class="primary-button" id="targetSaveButton" type="submit">Save Targets</button>
           </form>
         </section>
 

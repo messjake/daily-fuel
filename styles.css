@@ -132,6 +132,12 @@ button:focus-visible {
   box-shadow: 0 0 0 3px rgba(22, 124, 128, 0.18);
 }
 
+input[readonly] {
+  background: var(--surface-strong);
+  color: var(--ink);
+  font-weight: 800;
+}
+
 .date-input {
   padding: 10px 9px;
   font-size: 0.9rem;
@@ -310,6 +316,25 @@ label span,
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.macro-targets {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.macro-targets-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .primary-button,
